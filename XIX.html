@@ -1,0 +1,331 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>نظام جرد الرصيد والشرائح</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&display=swap');
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(to bottom left, #e8f0ff, #ffffff);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      overflow-x: auto;
+    }
+    h2, h3 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+    input, button {
+      padding: 12px;
+      margin: 8px 0;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+    input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background: #2c80b4;
+    }
+    .section {
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px dashed #ddd;
+    }
+    .stats {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+    .alert, .success {
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+      display: none;
+    }
+    .alert {
+      background-color: #ffebeb;
+      color: #c0392b;
+    }
+    .success {
+      background-color: #e0f8e0;
+      color: #27ae60;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      min-width: 300px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background: #3498db;
+      color: white;
+      white-space: nowrap;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      color: #2c3e50;
+      cursor: pointer;
+      user-select: none;
+    }
+    @media (max-width: 768px) {
+      body { padding: 15px; }
+      .container { padding: 20px; }
+      input, button { font-size: 14px; padding: 10px; }
+      h2, h3 { font-size: 22px; }
+      table th, table td { padding: 8px; font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+      .container { padding: 15px 10px; }
+      h2, h3 { font-size: 20px; }
+      input, button { font-size: 13px; padding: 8px; }
+      label { font-size: 14px; }
+      table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📊 نظام جرد الرصيد والشرائح</h2>
+
+    <div class="section">
+      <h3>➕ إضافة للمخزون</h3>
+      <input type="number" id="addBalance" placeholder="أضف كمية رصيد" />
+      <button onclick="addToStock('balance')">إضافة رصيد</button>
+
+      <input type="number" id="addSims" placeholder="أضف عدد الشرائح" />
+      <button onclick="addToStock('sims')">إضافة شرائح</button>
+      <div id="successMessage" class="success"></div>
+    </div>
+
+    <div class="section">
+      <h3>💰 عملية بيع</h3>
+      <input type="text" id="opId" list="opSuggestions" placeholder="نوع الشراء" />
+      <datalist id="opSuggestions">
+        <option value="تبديل">
+        <option value="مباع">
+        <option value="رصيد">
+      </datalist>
+
+      <input type="number" id="sellBalance" list="balanceSuggestions" placeholder="رصيد مباع (اختياري)" />
+      <datalist id="balanceSuggestions">
+        <option value="65938">
+        <option value="47938">
+        <option value="51938">
+        <option value="21093">
+        <option value="6232">
+        <option value="14381">
+        <option value="3068">
+        <option value="25000">
+        <option value="50000">
+        <option value="57526">
+        <option value="31639">
+        <option value="2013">
+      </datalist>
+
+      <label><input type="checkbox" id="withSim" /> بيع شريحة مع رصيد</label>
+      <input type="number" id="simPrice" placeholder="سعر الشريحة (اختياري)" />
+      <input type="number" id="balancePrice" placeholder="سعر الرصيد" />
+      <button onclick="makeSale()">تنفيذ عملية البيع</button>
+    </div>
+
+    <div class="section stats">
+      <h3>📈 الإحصائيات</h3>
+      <p>الرصيد في المخزون: <strong><span id="balanceStock">0</span></strong></p>
+      <p>الشرائح في المخزون: <strong><span id="simStock">0</span></strong></p>
+      <p>عدد الرصيد المباع: <strong><span id="soldBalance">0</span></strong></p>
+      <p>عدد الشرائح المباعة: <strong><span id="soldSims">0</span></strong></p>
+      <p>رصيد الشرائح المستخدم: <strong><span id="fakeBalanceView">0</span></strong></p>
+      <p>إجمالي عدد العمليات: <strong><span id="totalOps">0</span></strong></p>
+      <div id="lowStockAlert" class="alert">⚠️ تنبيه: المخزون منخفض، الرجاء إعادة التزويد!</div>
+    </div>
+
+    <div class="section">
+      <h3>📜 سجل العمليات</h3>
+      <table>
+        <thead>
+          <tr><th>رقم العملية</th><th>نوع العملية</th><th>رصيد</th><th>شريحة</th><th>السعر</th><th>تاريخ</th></tr>
+        </thead>
+        <tbody id="logTable"></tbody>
+      </table>
+    </div>
+
+    <div class="section" style="text-align:center;">
+      <button style="background:#e74c3c;" onclick="resetAll()">🧹 تصفير المخزون والإحصائيات</button>
+    </div>
+
+    <div class="section" style="text-align:center;">
+      <button onclick="window.open('https://www.google.com/search?q=calculator', '_blank')">🧮 فتح الآلة الحاسبة</button>
+    </div>
+  </div>
+
+  <script>
+    let stock = JSON.parse(localStorage.getItem('stock')) || { balance: 0, sims: 0 };
+    let stats = JSON.parse(localStorage.getItem('stats')) || { soldBalance: 0, soldSims: 0, ops: [] };
+    let fakeBalanceFromSims = Number(localStorage.getItem('fakeBalance')) || 0;
+
+    function updateUI() {
+      document.getElementById('balanceStock').innerText = stock.balance;
+      document.getElementById('simStock').innerText = stock.sims;
+      document.getElementById('soldBalance').innerText = stats.soldBalance;
+      document.getElementById('soldSims').innerText = stats.soldSims;
+      document.getElementById('totalOps').innerText = stats.ops.length;
+      document.getElementById('fakeBalanceView').innerText = fakeBalanceFromSims;
+
+      let logTable = document.getElementById('logTable');
+      logTable.innerHTML = stats.ops.map(op => {
+        let simIcon = op.sim ? '🪪' : '🪙';
+        let priceText = op.sim ? (op.simPrice ? op.simPrice + ' تركي' : '-') : (op.balancePrice ? op.balancePrice + ' تركي' : '-');
+
+        let rowColor = '';
+        switch(op.type) {
+          case 'مباع': rowColor = 'background-color:#ffe6e6;'; break;
+          case 'تبديل': rowColor = 'background-color:#e6f7ff;'; break;
+          case 'رصيد': rowColor = 'background-color:#e9ffe6;'; break;
+          default: rowColor = '';
+        }
+
+        return `<tr style="${rowColor}">
+                  <td>${op.id}</td>
+                  <td>${op.type}</td>
+                  <td>${op.balance > 0 ? op.balance : '-'}</td>
+                  <td>${simIcon}</td>
+                  <td>${priceText}</td>
+                  <td>${op.date}</td>
+                </tr>`;
+      }).join('');
+
+      const alertBox = document.getElementById('lowStockAlert');
+      alertBox.style.display = (stock.balance < 5 || stock.sims < 5) ? 'block' : 'none';
+    }
+
+    function showSuccessMessage(text) {
+      const msg = document.getElementById('successMessage');
+      msg.textContent = text;
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 3000);
+    }
+
+    function addToStock(type) {
+      let value = Number(document.getElementById(type === 'balance' ? 'addBalance' : 'addSims').value);
+      if (value > 0) {
+        stock[type === 'balance' ? 'balance' : 'sims'] += value;
+        saveData();
+        updateUI();
+        showSuccessMessage('✅ تمت إضافة ' + (type === 'balance' ? 'الرصيد' : 'الشرائح') + ' بنجاح');
+        document.getElementById(type === 'balance' ? 'addBalance' : 'addSims').value = '';
+      } else {
+        alert('الرجاء إدخال قيمة صحيحة.');
+      }
+    }
+
+    function makeSale() {
+      const type = document.getElementById('opId').value.trim();
+      const balance = Number(document.getElementById('sellBalance').value);
+      const withSim = document.getElementById('withSim').checked;
+      const simPrice = Number(document.getElementById('simPrice').value);
+      const balancePrice = Number(document.getElementById('balancePrice').value);
+
+      if (!type) return alert('يرجى إدخال نوع العملية.');
+      if (balance <= 0 && !withSim) return alert('حدد رصيد أو شريحة للبيع.');
+      if (balance > stock.balance) return alert('الرصيد غير كاف.');
+      if (withSim && stock.sims < 1) return alert('لا توجد شرائح كافية.');
+
+      if (balance > 0) {
+        stock.balance -= balance;
+        stats.soldBalance += balance;
+      }
+
+      if (withSim) {
+        stock.sims -= 1;
+        stats.soldSims += 1;
+        fakeBalanceFromSims += 47938;
+        localStorage.setItem('fakeBalance', fakeBalanceFromSims);
+      }
+
+      const opNumber = stats.ops.length + 1;
+      stats.ops.push({
+        id: opNumber,
+        type,
+        balance,
+        sim: withSim,
+        simPrice: withSim ? simPrice : null,
+        balancePrice: !withSim ? balancePrice : null,
+        date: new Date().toLocaleString()
+      });
+
+      saveData();
+      updateUI();
+
+      document.getElementById('opId').value = '';
+      document.getElementById('sellBalance').value = '';
+      document.getElementById('withSim').checked = false;
+      document.getElementById('simPrice').value = '';
+      document.getElementById('balancePrice').value = '';
+
+      showSuccessMessage('✅ تمت عملية البيع بنجاح');
+    }
+
+    function resetAll() {
+      if (confirm('هل أنت متأكد من تصفير المخزون والإحصائيات وسجل العمليات؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        stock = { balance: 0, sims: 0 };
+        stats = { soldBalance: 0, soldSims: 0, ops: [] };
+        fakeBalanceFromSims = 0;
+        localStorage.removeItem('fakeBalance');
+        saveData();
+        updateUI();
+        showSuccessMessage('🧹 تم تصفير جميع البيانات بنجاح');
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('stock', JSON.stringify(stock));
+      localStorage.setItem('stats', JSON.stringify(stats));
+    }
+
+    updateUI();
+  </script>
+</body>
+</html>
